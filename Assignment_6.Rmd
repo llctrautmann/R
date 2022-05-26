@@ -1,0 +1,410 @@
+---
+title: 'Assignment 6'
+author: "Abe Hofman & Johnny van Doorn, Psychological Methods, University of Amsterdam"
+subtitle: Basic Skills in Statistics | 2020-2021
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Please run these function before assessing the assignment to make the visualization load properly.###
+```{R}
+
+# general
+multiplot <-function(row, col) {
+  par(mfrow = c(row, col), pty = "m")
+}
+
+# Question 8/Part 1
+se <- function(x) {
+  y <- x[!is.na(x)]
+  sqrt(var(as.vector(y))/length(y))
+}
+
+ci_0.5 <- function(scores) { 
+  m <- mean(scores, na.rm = TRUE) 
+  stderr <- se(scores) 
+  len <- length(scores) 
+  upper <- m + qt(0.75, df = len - 1) * stderr 
+  lower <- m + qt(0.25, df = len - 1) * stderr 
+  return(data.frame(lower = lower, upper = upper))
+}
+  
+
+# P.values 
+p.value.historam <- function(mp = FALSE,row = 1,col = 1,mean_null = 1, mean_alt = 1,N = 5,sd = 1,alpha = 0.05) {
+  p_values = numeric()
+  if(mp) {
+    multiplot(row,col)
+  } else {}
+  for(k in 1:length(mean_alt)) {
+    for (i in 1:10000) {
+      s1 <- rnorm(N, mean_null, sd); s2 <- rnorm(N,mean_alt[k], sd)
+      p_values[i] <- t.test(s1, s2)$p.value
+    }
+    h <- hist(p_values, br=50, main = paste('Histogram of p.values')) # ,xlim = c(0,0.6) if necessary
+    legend('topright',legend = c(paste("n =",N),paste("null =",mean_null),paste("alt =",mean_alt[k]),paste('sd =',sd)),box.lty = 'blank',cex = 0.75)
+    abline(v = alpha,col = 'red')
+  }
+}
+
+
+```
+
+
+
+**Topics: Confidence intervals \& P-values \& Power \& Errors in Inferences**
+
+In the course syllabus you can find the deadline for the assignment and the suggested literature.
+
+***
+
+### Confidence intervals
+
+##### 1. 
+
+*What does Vasishth mean when he states that the population mean is not a random variable? (p. 61)*
+
+The population mean is a single point value that cannot have a multitude of possible values and is therefore not a random variable. 
+
+##### 2. 
+
+*Read chapter 3.6 and 3.7. How do you change the $\alpha$-level in the t.test() function?*
+
+```{R}
+?t.test
+```
+conf.level lets us do adjustments to the alpha value. 
+
+##### 3.
+
+*During the lecture you measured my length. Describe two ways to ensure that your collective guess is closer to my true length.*
+
+1. Remove outlier values/guesses from people that are clearly not able to give a relevant guess (e.g. blind people, or people who are not familiar with the metric system, if the height is supposed ot be given in cm)
+
+2. get everyone to stand on the same level so that the guesses are not biased by orientation or distance from Abe. 
+
+##### 4.
+
+*Given that $\bar{x} = 5$, $SD = 2$ and the sample size is 50, what is the 90\% CI.*
+```{R}
+sample <- rnorm(50,5,2)
+
+t.test(sample,conf.level = 0.9)$conf.int
+```
+
+lower.bound = 4.562435
+upper.bound = 5.586420
+
+
+##### 5.
+
+*What is the probability that 0 (hypothesis about the true population mean) is located within this CI?*
+
+The probability of having one specific value in the CI is 0 (more precisely its not 0 but any statement that would claim such a probability would strictly not carry any meaning.)
+In the frequentist framework, confidence intervals are only robust in their explanations if conceptualized over the long run. The meaning of the conﬁdence interval depends solely 
+on hypothetical repeated samples. The true height of Abe is not a random variable but a fixed true value. Within the frequentist framework it is simply not possible to say something 
+about the "probability that 0 (hypothesis about the true population mean) is located within this CI".
+
+##### 6.
+
+*What happens with the CI if the sample size increases?*
+
+The standard error decreases and the CI get narrower. 
+
+##### 7.
+
+*How big is the CI if we have data from the full population?*
+
+There is no necessity for the confidence interval from the full population because we then know what the true mean is. 
+
+
+##### 8.
+
+*Assume $\alpha = .5$. What is the probability that $\mu$ is located within the estimated CI, when we keep repeating the experiment? Check your answer with some simulation based on: $\mu = 10$, $\sigma = 3$ and $N=50$.*
+```{R}
+
+pop.mean <- 10
+pop.sd <- 3
+sample.size <- 50
+store <- rep(NA, 1000)
+lower <- rep(NA, 1000)
+upper <- rep(NA, 1000)
+
+for(i in 1:1000) { 
+  sample <- rnorm(sample.size, mean = pop.mean, sd = pop.sd)
+  lower[i] <- ci_0.5(sample)$lower # se and ci_0.5 are defined at the beginning of the assignment
+  upper[i] <- ci_0.5(sample)$upper 
+  if(lower[i] < pop.mean & upper[i] > pop.mean) {
+    store[i] <- TRUE 
+  }
+  else { store[i] <- FALSE
+  }
+}
+
+cis <- cbind(lower, upper)
+store <- factor(store)
+summary(store)
+
+```
+
+The probability now is 50% and the confidence interval is narrower. This also checks out when simulating the data (see above).
+
+#### Vasishth \& Broe
+
+Vasishth \& Broe's questions about the literature.
+
+##### 1.
+
+*A 95\% confidence interval has a ?\% chance of describing the sample mean:*
+A) 95\%
+B) 100\%
+
+A 95% confidence interval has a 100% chance of describing the sample mean because it is constructed around the sample mean. 
+
+##### 2.
+
+*For the same data, a 90\% CI will be wider than a 95\% CI.*
+A) True
+B) False
+
+False
+
+***
+### P-values
+
+##### 1.
+
+*In the lecture we showed that p-values are uniformly distributed given that $H_{0}$ is true. Now describe the distribution if $H_{0}$ is false. Give an explanation.*
+
+The distribution if the Null Hypothesis is rejected is skewed heavily towards 0. If there is a true difference between the null and the sample distribution, more samples will reflect this true difference.
+
+##### 2.
+
+*Use the R code from the lecture to investigate different scenarios. Explain in every scenario why the distribution of the p-values does or doesn't change, and show how you've altered the code.*
+
+For this question I will describe four different scenarios. Alpha is marked with a vertical red line in the histograms. 
+
+1. equal means, n = 5
+2. mean_null = 7: mean_alt = 7.5, n = 5
+3. mean_null = 7: mean_alt = 8.5, n = 5
+4. mean_null = 7: mean_alt = 7.5, n = 50 
+
+```{r, include=TRUE}
+multiplot(2,2)
+p.value.historam(mean_null = 7,mean_alt = 7,N = 5,alpha = 0.05)
+p.value.historam(mean_null = 7,mean_alt = 7.5,N = 5,alpha = 0.05)
+p.value.historam(mean_null = 7,mean_alt = 8.5,N = 5,alpha = 0.05)
+p.value.historam(mean_null = 7,mean_alt = 7.5,N = 50,alpha = 0.05)
+
+```
+Explanation: 
+Scenario 1 (top left): 
+
+The distribution is uniform because the means for both groups are equal. There is no evidence to reject the null hypothesis and therefore all p.values have an equal likelihood of occurring.
+
+Scenario 2 (top right):
+The distribution starts to get skewed towards 0 (and therefore alpha). With this very low sample size the effect is not as pronounced as the statistical power is very low (see. scenario 4 for comparison).
+
+Scenario 3 (bottom left): 
+
+Here there is a stronger difference in the means visible even at low sample size. Most samples now return significant results.
+
+Scenario 4 (bottom right): 
+
+In comparison to scenario 2, here the means are not very far away from each other but the sample size is much larger. Therefore there is much more statistical power to find an effect. 
+The distribution is heavily skewed towards 0. 
+
+##### 3a. 
+
+*there is an effect of Ritalin of study success?*
+
+The null would be rejected and the distribution of p-values would locate more of the p values below or around the alpha level (0.05, red line in the histograms above). How pronounced this effect is
+would depend on the delta between the samples with Ritalin and the samples without Ritalin.
+
+##### 3b. 
+
+*if this effect is bigger than the effect in question a?*
+
+More samples would fall with in the rejection zone. The code below gives a good representation of the effect. A larger effect
+translates into a bigger delta between the mean under the Null and the mean under the alternative hypothesis. This results in more samples with p-value smaller than alpha (red line).
+
+```{R} 
+
+m <- c(7.5,8,8.5,9)
+N <- 20
+
+p.value.historam(mp = T,row = 2,col = 2,mean_null = 7,mean_alt = m,N = 10,alpha = 0.05)
+
+```
+
+
+##### 3c. 
+
+*if the power is bigger than the power in question a?*
+
+The effects that are found between the H0 and the $H_A$ become better to differentiate.  The distribution of the p values will be more skewed towards the rejection are.
+This effect can be demonstrated by increasing the sample size while keeping the mean identical. With A higher sample size the distribution of the sample becomes narrower. 
+As a consequence the are in which a result from the $H_A$ falls within the are of the Null in which the null is not rejected (smaller values than 1.96) becomes smaller. 
+It is no harder to make a type II Error. 
+
+```{R}
+multiplot(1,2)
+m <- 7.5
+
+p.value.historam(mp = F,mean_null = 7,mean_alt = m,N = 5,alpha = 0.05)
+p.value.historam(mp = F,mean_null = 7,mean_alt = m,N = 50,alpha = 0.05)
+```
+
+##### 3d. 
+
+*if there is an effect and you use a one-sided rather than two-sided test?*
+
+To answer this question some specification are required. Let's postulate: 
+
+H_0: $\bar{x}_2 \le \bar{x}_1$ 
+
+H_A_: $\bar{x}_2 > \bar{x}_1$ 
+
+
+In the special case of $\bar{x}_2 = \bar{x}_1$ the distribution would be uniform. This follows the explanation from above. 
+
+The the other cases the result of the one-sided t.tests would depend on the direction of the test. If the difference of the
+H_A coincides with the direction of the postulated hypothesis there would be the same general effects as observed with a two-sided
+test. The only difference in a one-sided scenario is that alpha applies only to one side so the area under the curve  that 
+indicated rejection would be larger in a one-sided test than in a two-sided test. If the sample mean would differ in the other 
+direction, the values would all cluster around 1. The three histograms below visualize these effects.
+```{R}
+
+multiplot(1,2)
+
+p.value.historam(mp = F,mean_null = 7,mean_alt = 8,N = 5,alpha = 0.05)
+
+p_values <- numeric()
+
+for (i in 1:10000) {
+  sample <- rnorm(5,6.5,1)
+  p_values[i] <- t.test(sample,mu = 7,alternative = 'greater')$p.value
+}
+
+hist(p_values,breaks = 50, main = 'Histogram of p.values')
+legend('topleft',legend = c("n = 5","null =7","alt = 6.5","sd = 1",'H_a: x2 > x1'),box.lty = 'blank',cex = 0.75)
+
+```
+
+
+##### 3e. 
+
+*if $\alpha$ is .5 rather than .05?*
+
+The level of alpha doesn't change the distribution of the p.values.
+
+##### 4.
+
+*Does the confidence interval of a sample mean changes if you choose a different $H_{0}$? Explain.*
+
+No the confidence interval of the sample mean doesn't change if H_0 is changed. All components necessary to compute the confidence
+interval are dependent on the sample.
+
+##### 5.
+
+*Does the confidence interval of a sample mean changes if you choose a different $\alpha$? Explain.*
+
+Yes the confidence interval becomes smaller when alpha becomes larger. The confidence interval depends on alpha 
+for determining the appropriate t.statistic in the formula $CI = \bar{x} \pm t_{\alpha}* SE$ with $SE = \frac{s}{\sqrt{n}}$ 
+Changing alpha only results in a change of the tolerance of Type 1 Errors. Lower alpha values reduce the likelihood of a false positive event (Type I Error).
+
+#### Vasishth \& Broe
+
+##### 1.
+
+*True or false? The p-value is the probability of the null hypothesis being true.*
+
+False
+
+##### 2.
+
+*True or false? The p-value is the probability that the result occurred by chance.*
+
+True
+
+
+***
+### Errors in inference
+
+##### 1.
+
+*Imagine that 100 researchers study whether vegetarions have a higher IQ, when in reality there is no effect. How often do you expect a significant result nonetheless? Assume that the researchers perform proper studies with $\alpha = .05$.*
+
+1/20 times there should be a false positive result. So 5% of the time. 
+
+##### 2.
+
+*What statistical error in the conclusion of the researchers is made when a significant result is found?*
+
+Type 1 Error or a false Positive Error
+
+##### 3.
+
+*Assume journals only publish significant effects. Is the observed effect size in those journals different from the true effect size? Explain.*
+
+Yes under the given circumstances the effect size in the journal should structurally overestimate the observed effect size. [Explanation still missing]
+
+##### 4a.
+
+*If you want to increase the probability of finding an effect when in reality there is no effect, should you use many or few participants? Or doesn't it matter? Why?*
+
+It doesn't matter. If there is no effect, the only way to find an effect are false positives (Type 1 Error). However, Type 1 Errors are not related to sample size. 
+The only way to find a significant result would be to adjust alpha higher. 
+
+##### 4b.
+
+*And if there is an effect?*
+
+If there is an effect it makes sense to increase the sample size. The sampling distribution of the sample means becomes narrower with a higher sample size and thereby more precise. If there is a true difference between the Null hypothesis and the Alternative Hypothesis more precision in determining the true population mean through the sampling distribution should lead to more accurate rejections of the Null Hypothesis. 
+
+##### 5a.
+
+You read an article about the influence of Ritalin on study success. The researchers don't find a difference between students that use Ritalin and students that don't use Ritalin. You notice that the research was done with very few participants and thus low power. The researchers conclude that Ritalin has no effect. 
+
+*What do you think of this conclusion? Do you share their opinion or would you conclude something else? If so, what would you conclude?*
+
+With low participant numbers and therefore low power this conclusion seems to preliminary at best. With low power it is plausible to assume that a real effect was rejected (type II Error). I would conclude that the study provides some evidence, but that future studies with more participants need to confirm and strengthen the conclusions in the article. 
+
+##### 5b. 
+
+You read an article about the influence of Ritalin on study success. The researchers do find a difference between students that use Ritalin and students that don't use Ritalin. You notice that the research was done with very few participants and thus low power. The researchers conclude that Ritalin has an effect. Assume it's a robust experiment and we trust the researchers. *How could they have found an effect, even in such a small sample?*
+
+#### Vasishth \& Broe
+
+Vasishth \& Broe's questions about the literature.
+
+Suppose you carry out a between-participants experiment where you have a control and treatment group, say 20 participants in each sample. You carry out a two-sample t-test and find that the result is $\emph{t}(18)=2.7, p<.01$. Which of the statements below are true?
+
+##### 1a.
+
+*You have absolutely disproved the null hypothesis.*
+
+False. I cannot absolutely prove anything. I have only found evidence that is unlikely to occur given the Null Hypothesis. 
+
+##### 1b.
+
+*The probability of the null hypothesis being true is 0.01.*
+
+False. A p-value is a conditional probability—given the null hypothesis is true. Not a probability of the Null. 
+
+##### 1c.
+
+*You have absolutely proved that there is a difference between the two means.*
+
+False. I have merely found evidence that suggests a difference between the groups. Science doesn't offer an absolute proof. 
+
+##### 1d.
+
+*You have a reliable experimental finding in the sense that if you were to repeat the experiment 100 times, in 99\% of the cases you would get a significant result.*
+
+True
+
