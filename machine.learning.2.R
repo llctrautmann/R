@@ -1,4 +1,4 @@
-bike_sharing <- read.csv("/Users/luca/Desktop/Bike-Sharing-Dataset/day.csv",header = T)
+bike_sharing <- read.csv("/Users/guy/Desktop/Bike-Sharing-Dataset/day.csv",header = T)
 
 drop <- c("casual","registered","dteday","instant")
 bike_sharing <- bike_sharing[,!(names(bike_sharing) %in% drop)]
@@ -63,7 +63,7 @@ stepwise_model$coefficients
 
 # Question 15: 
 ## Forward
-seoul_data <- read.table("/Users/luca/Desktop/BikeSharingSeoul.txt",header = T,sep = " ")
+seoul_data <- read.table("/Users/guy/Desktop/BikeSharingSeoul.txt",header = T,sep = " ")
 model_forward <- lm(rnt ~ 1, data = seoul_data)
 seoul_forward <- MASS::stepAIC(model_forward,rnt ~ mnth+workingday+weekday+temp+hum+wind_speed+visibility+dew_temp+solar_rad+rainfall+snowfall,direction = 'forward')
 summary(seoul_forward)
