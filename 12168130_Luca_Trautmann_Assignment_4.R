@@ -1,5 +1,5 @@
-# Name: Luca Trautmann
-# Student_number: 12168130
+# Name: Guy Montag
+# 
 
 #Q1: Make this plot with the vector
 
