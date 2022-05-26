@@ -23,7 +23,7 @@ pred$class # based on highest posterior probability
 table(truth = wine$Type, predicted = mod1$class)
 mean(wine$Type == mod1$class)
 
-drugzzz <- read.csv("/Users/luca/Downloads/drug_consumption.csv",header = T)
+drugzzz <- read.csv("/Users/guy/Downloads/drug_consumption.csv",header = T)
 lapply(drugzzz, class)
 
 # Question 5: 
@@ -60,7 +60,7 @@ stepclass(binary ~ Age+Gender+Education+Country+Ethnicity+Nscore+Escore+Oscore+A
 
 # Question 9 
 
-drugzzzzz <- read.csv("/Users/luca/Downloads/drug_consumption.csv",header = T)
+drugzzzzz <- read.csv("/Users/guy/Downloads/drug_consumption.csv",header = T)
 
 set.seed(135)
 rda(Cannabis ~ Age+Gender+Education+Country+Ethnicity+Nscore+Escore+Oscore+Ascore+Cscore+Impulsive+SS,data = drugzzzzz)
