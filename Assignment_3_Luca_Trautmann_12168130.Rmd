@@ -1,0 +1,279 @@
+---
+title: '2021-2022: Regression & Model Selection'
+subtitle: 'Basic Skills in Statistics: Assignment 3'
+author: 'Luca Trautmann - 12168130'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+When we fit a statistical model to our data we have to balance the extent to which our model fits our observed data, and the parsimony of our model. A more parsimonious model will use less parameters to describe the data, but will also provide a worse fit. We need some balance here! But why is this the case? Why don't we just take more complex model with more parameters?
+
+Let's look at an example:
+
+```{r}
+set.seed(1)  # we all generate the same data (you can change this if you like)
+N <- 10 # we have 10 subjects
+myData <- data.frame(x1 = runif(10, -1, 1),
+                     x2 = runif(10, 0, 3),
+                     x3 = rnorm(10),
+                     x4 = rnorm(10, 3, 1),
+                     x5 = runif(10, -3, 1),
+                     x6 = runif(10, -7, 1),
+                     x7 = rbinom(10, 10, .5),
+                     x8 = rbinom(10, 10, .05),
+                     x9 = runif(10, 1, 6), 
+                     x10 = rnorm(10))
+myData <- myData[order(myData$x4), ]
+myData$y <- 9 + -1.1 * myData$x4 + rnorm(N, 0, .9) # here we simulate the y values
+# based on some linear regression model, and add some random error
+plot(myData$x4, myData$y) # and we plot our results
+```
+
+So, $x4$ and $y$ are our data here. For example, $x4$ is the number of alcohol beverages someone drinks and $y$ is his/her score on a working memory test.
+
+With the R code `lm(y ~ x4)` we can fit a linear regression model. We can extend the model by including many more variables (x1, x2, etc), for example with `lm(y ~ x1 + x2 + x3 + x4)` we fit a model were we predict $y$ with $x1$, $x2$, $x3$, and $x4$.
+
+#### Question 1
+
+Fit both the `lm(y ~ x4)` and the model with all nine predictors `lm(y ~ x1 + x2 + x3 + x4 + .. )` to see if you can explain the `y` variable in myData. What is the explained variance in both models? Add two lines to the plot above that show the predicted values for both models. Why does the very complex model nine predictors describe the `y` variable so well?
+
+```{r}
+# Model fitting 
+mod_1 <- lm(y ~ x4, data = myData)
+mod_2 <- lm(y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9,data = myData)
+
+
+summary(mod_1)$r.squared
+summary(mod_2)$r.squared
+
+
+
+plot(myData$x4, myData$y)
+lines(myData$x4,predict(mod_1),col = 'red')
+lines(myData$x4,predict(mod_2),col = 'blue')
+
+```
+The explained variance in model 1 is 0.4863744. The explained variance in Model 2 is 1. 
+
+
+The second model with nine predictor variables fits the data so well because it takes the unexplained/error variance and falsely attributes it to meaningful predict the dependent variable. The model will fit the current data very well but it won't fit new data well. 
+
+#### Question 2
+
+So the complex fits perfectly to our data. Why is this the case? The problem is overfitting. Look up a definition of overfitting in the world wide web __and__ explain why overfitting is a problem.
+
+Definition of __Overfitting__: When an algorithm is is either too complex or too flexible, it can end up overfitting and focus on the noise (irrelevant details) instead of the signal (the desired pattern) in training data. When an overfit model makes predictions that incorporate noise, it will still perform quite well on its training data but perform quite poorly on new data. The essence of overfitting is to have unknowingly extracted some of the residual variation (i.e., the noise) as if that variation represented the underlying model structure. 
+
+#### Question 3
+
+One way to control for overfitting is crossvalidation. Lets look again at our simple dataset to examine how crossvalidation works. Therefore, we will now collect a second set of data [testing data]. We will use R to simulate the data based on the same model!
+
+```{r}
+myData_test <- data.frame(x1 = runif(10, -1, 1),
+                          x2 = runif(10, 0, 3),
+                          x3 = rnorm(10),
+                          x4 = rnorm(10, 3, 1),
+                          x5 = runif(10, -3, 1),
+                          x6 = runif(10, -7, 1),
+                          x7 = rbinom(10, 10, .5),
+                          x8 = rbinom(10, 10, .05),
+                          x9 = runif(10, 1, 6), 
+                          x10 = rnorm(10))
+myData_test <- myData_test[order(myData_test$x4), ]
+myData_test$y_test <- 9 + -1.1 * myData_test$x4 + rnorm(N, 0, .9) 
+```
+
+Let's plot it to compare both dataset:
+
+```{r}
+plot(myData$x4, myData$y,
+     pch = 19, col = 'red', # and we plot our data:
+     ylab = 'y', xlab = 'x', 
+     xlim = c(1, 6), ylim = c(2, 8))
+points(myData_test$x4, myData_test$y_test,
+       pch = 19, col = 'blue')
+legend('topright', legend = c('test', 'train'), 
+       col = c('blue', 'red'), pch = 19, bty = 'n')
+```
+
+So in our first dataset we have a variable `y` on which we fit our model. Now we will use `y_test` in `myData_test` to check our results. Following such a procedure is called cross validation (we validate our prediction based on some model on a second test data set). So we have `y [y_train]` and `y_test` and the same _true_ model is used to generate both variables. Fit both models (the simple model and the complex model) to the training data (myData). So based on `x4` we want to predict `y`. What are the predicted values?
+
+```{R}
+# Fitting the training data to the linear models
+mod_1 <- lm(y ~ x4, data = myData)
+mod_2 <- lm(y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9,data = myData)
+
+# simple model one predictor 
+predict(mod_1)
+predict(mod_1, newdata = myData_test)
+
+
+# simple model nine predictor 
+predict(mod_2)
+predict(mod_2, newdata = myData_test)
+
+```
+
+
+
+
+#### Question 4
+
+Plot the _test data_ [myData_test]. Add two lines that show the predictions of both models that are based on the _training data_. Explain what you see. Did you predict that the prediction line based on the complex model would go through all data points?
+```{r}
+plot(myData_test$x4,myData_test$y_test,ylim = c(1,10))
+
+abline(mod_1, col = 'orange')
+
+lines(myData_test$x4,predict(mod_1,newdata = myData_test),col = 'red') # we use new data because we want to apply the old regression equation to new x values and y values
+lines(myData_test$x4,predict(mod_2,newdata = myData_test),col = 'blue')
+```
+
+
+What this plot demonstrates is that the perfectly fitted model with nine predictors (mod_2) from the training data is not at all capable of predicting the test data. The model fitted with only one predictor is however able to give a decent prediction of the new test data. 
+
+I did not predict that the complex model would go through all the data points as it is perfectly fitted to a different data set and therefore should have only limited predictive power to other data. 
+
+#### Question 5
+
+Now we want to quantify how well both models based on the train data predict the test data. Compare the predictions based on the training data to the observations in the test data. To quantify the model fit we can for example look at the variance of the differences between the predictions and the observation. Calculate this for both models.
+```{R}
+?var
+
+mod_1_predicted <- predict(mod_1,newdata = myData_test)
+mod_2_predicted <- predict(mod_2,newdata = myData_test)
+
+observed <- myData_test$y_test
+
+
+difference.mod.1 <- mod_1_predicted - observed
+
+difference.mod.2 <- mod_2_predicted - observed
+
+var(difference.mod.1)
+var(difference.mod.2)
+
+```
+
+The variance for model 1 is lower, the fit therefore is better. 
+
+#### Question 6
+
+So one way to quantify the model fit is to consider the variance between the observations and the predictions (these differences between observations and predictions are called the residuals). However we don't always have a cross validation sample. Fortunately, we have AIC and BIC. What are the formula's of the AIC and BIC? Clearly explain how both these fit statistics balance model fit and model complexity.
+
+$$AIC = -2ln(likelihood) + 2K$$
+Where:
+K is the number of estimated parameters.
+$\hat{L}$ is Log-likelihood is a measure of model fit
+
+$$BIC = -2*ln(likelihood)+k*ln(n) $$
+n is the number of data points 
+k is model degrees of freedom/model parameter 
+
+AIC and BIC calculate the balance between model fit and complexity based on the maximum likelihood estimate (likelihood in the formulas above). Maximum likelihood estimation is a method that determines model parameters (e.g. mean and sd in a normal distribution). The parameter values are found such that they maximize the likelihood that the process described by the model produced the data that were actually observed. Usually the log of the likelihood is used to simplify the mathmatics. AIC and BIC both have lower values for a higher maximum likelihood (i.e better fit). The difference between AIC and BIC lays in their aim. AIC attempts to select the best model out of an unknown higher dimensional reality. BIC attempts to find the true model out of a set of models. 
+
+*Balancing model fit and model complexity*
+
+Both AIC and BIC calculate the balance between model fit and complexity by punishing overly complex models. The best-fit model according to AIC is the one that explains the greatest amount of variation with the least amount of independent variables. The AIC does so by looking at the amount of information that is lost in each model respectively. The BIC looks at the unexplained variance in the dependent variables as well as the number of parameters to determine the fit. Both BIC and AIC attempt to resolve the overfitting problem by introducing a penalty term for the number of parameters in the model. Generally speaking, AIC is more lenient with punishing, whereas BIC is more strict tending to simpler models. 
+
+#### Question 7
+
+In R you can simply get the AIC and BIC values of your fitted model with `AIC()` and `BIC()`. Use both fit statistics to compare the linear model with more complex models by increasing the complexity [the number of predictors] order of the polynomials: e.g. `lm(y~x1 + x2)`, `lm(y~x1 + x2 + x3)`, up to the most complex model. Use the code below to generate a bigger dataset [we need a bit more power]. Play around with the `step` function [direction, k = 2 or k = log(n). What model should be selected? What approach works best?
+
+```{r}
+set.seed(1)  # we all generate the same data (you can change this if you like)
+N7 <- 500 # we have more subjects
+myBigData <- data.frame(x1 = runif(N7, -1, 1),
+                     x2 = runif(N7, 0, 3),
+                     x3 = rnorm(N7),
+                     x4 = rnorm(N7, 3, 1),
+                     x5 = runif(N7, -3, 1),
+                     x6 = runif(N7, -7, 1),
+                     x7 = rbinom(N7, 10, .5),
+                     x8 = rbinom(N7, 10, .05),
+                     x9 = runif(N7, 1, 6), 
+                     x10 = rnorm(N7))
+myBigData <- myBigData[order(myBigData$x4), ]
+myBigData$y <- 9 + -1.1 * myBigData$x4 + rnorm(N7, 0, .9)
+
+mod1 <- lm(y~x1,data = myBigData)
+mod2 <- lm(y~x1 + x2,data = myBigData)
+mod3 <-lm(y~x1 + x2 + x3,data = myBigData)
+mod4 <- lm(y~x1 + x2 + x3 +x4,data = myBigData)
+mod5 <- lm(y~x1 + x2 + x3 +x4 +x5,data = myBigData)
+mod6 <- lm(y~x1 + x2 + x3 +x4 +x5 + x6,data = myBigData)
+mod7 <- lm(y~x1 + x2 + x3 +x4 +x5 + x6 +x7,data = myBigData)
+mod8 <- lm(y~x1 + x2 + x3 +x4 +x5 + x6 +x7 +x8,data = myBigData)
+mod9 <- lm(y~x1 + x2 + x3 +x4 +x5 + x6 +x7 +x8 + x9,data = myBigData)
+mod10 <- lm(y~x1 + x2 + x3 +x4 +x5 + x6 +x7 +x8 + x9 + x10,data = myBigData)
+
+AIC(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9,mod10) # lower AIC better fit
+BIC(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9,mod10) # lower BIC better fit
+
+AIC(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9,mod10,k = 4) # step = 4
+
+
+```
+Based on the results of AIC and BIC the model with four predictors has the best fit. The parameter has the lowest value for the four parameter models. Based on my understanding of both concepts, I would the BIC because it is stricter in punishing and also because I know the underlying model that generated the data. So I can use the BIC in light of the intended purpose to select a true model from a set of models. However, both AIC and BIC come to the same conclusion so in the particular case it doesn't matter too much. 
+
+
+#### Question 8 (bonus)
+
+Continuation of question 5: We did our simulation for one specific case `set.seed(1000)`. It would be better to repeat it a couple of times to ensure that indeed in many of our simulations the variance of the residuals [see question 5] is higher for the complex model compared to the simple model. Do this simulation, we keep the sample training data [myData], but generate new test data in each run. Make a histogram of the variances of the residuals for both models. Describe what you see.
+
+```{R}
+
+var <- numeric() 
+var_2 <- numeric()
+
+for(i in 1:10000) {
+  N8 <- 10
+  myData_test <- data.frame(x1 = runif(10, -1, 1),
+                          x2 = runif(10, 0, 3),
+                          x3 = rnorm(10),
+                          x4 = rnorm(10, 3, 1),
+                          x5 = runif(10, -3, 1),
+                          x6 = runif(10, -7, 1),
+                          x7 = rbinom(10, 10, .5),
+                          x8 = rbinom(10, 10, .05),
+                          x9 = runif(10, 1, 6), 
+                          x10 = rnorm(10))
+  myData_test <- myData_test[order(myData_test$x4), ]
+  myData_test$y_test <- 9 + -1.1 * myData_test$x4 + rnorm(N8, 0, .9)
+  
+  mod_1_predicted <- predict(mod_1,newdata = myData_test)
+  mod_2_predicted <- predict(mod_2,newdata = myData_test)
+
+  observed <- myData_test$y_test
+
+
+  difference.mod.1 <- mod_1_predicted - observed
+
+  difference.mod.2 <- mod_2_predicted - observed
+
+  variance_mod_1 <- var(difference.mod.1)
+  variance_mod_2 <- var(difference.mod.2)
+  
+  var <- c(var,var(difference.mod.1))
+  var_2 <- c(var_2,var(difference.mod.2))
+  
+  
+}
+multiplot <- function(row, col) {
+  par(mfrow = c(row, col), pty = "m")
+}
+
+multiplot(1,2)
+hist(var, br=50,main = "simpel Model")
+
+hist(var_2,br=50, main = "Complex Model")
+
+
+```
+
+
+
+
+
+
