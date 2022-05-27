@@ -7,7 +7,7 @@ months <- c('03','03','03','03','04','04','05')
 multiplot(2,2)
 
 for(i in 1:length(dates)) {
-  path <- paste("/Users/luca/Desktop/macro/data./eurodollar.system/eurodollar-prices-intraday",months,dates,"2022.csv",sep = "-")
+  path <- paste("/Users/guy/Desktop/macro/data./eurodollar.system/eurodollar-prices-intraday",months,dates,"2022.csv",sep = "-")
   data <- read.csv(path[i], header = T)
   
   summary(data)
