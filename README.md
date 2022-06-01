@@ -1,2 +1,2 @@
 # Projects
-All the stuff I have learned so far
+My progress in R.
